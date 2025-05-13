@@ -33,10 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function generateProxyUrl(url) {
         // 清理URL，确保格式一致
         url = url.trim();
-        
-        // 去除URL前的http或https
-        url = url.replace(/^https?:\/\//, '');
-        
         // 获取当前页面的主机名
         const currentHost = window.location.host;
         const protocol = window.location.protocol;
