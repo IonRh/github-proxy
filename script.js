@@ -14,13 +14,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const exp4 = /^(?:https?:\/\/)?raw\.(?:githubusercontent|github)\.com\/.+?\/.+?\/.+?\/.+$/i;
     const exp5 = /^(?:https?:\/\/)?gist\.(?:githubusercontent|github)\.com\/.+?\/.+?\/.+$/i;
     const exp6 = /^(?:https?:\/\/)?github\.com\/.+?\/.+?\/tags.*$/i;
+    const exp7 = /^(?:https?:\/\/)?api\.github\.com\/.*$/i;
     
     // 当前页面URL的前缀，用于构建代理URL
     const PREFIX = '/';
     
     // 检查URL是否符合GitHub资源格式
     function checkUrl(url) {
-        for (let exp of [exp1, exp2, exp3, exp4, exp5, exp6]) {
+        for (let exp of [exp1, exp2, exp3, exp4, exp5, exp6, exp7]) {
             if (url.search(exp) === 0) {
                 return true;
             }
