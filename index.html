@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub 资源代理</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>GitHub 资源加速器</h1>
+            <p class="subtitle">轻松访问 GitHub 资源，无需任何限制</p>
+        </header>
+        
+        <main>
+            <div class="proxy-form">
+                <div class="input-group">
+                    <input type="text" id="github-url" placeholder="请输入 GitHub 链接" autocomplete="off">
+                    <button id="proxy-btn">获取链接</button>
+                </div>
+                <div class="example-links">
+                    <p>支持的链接类型：</p>
+                    <ul>
+                        <li>Releases 下载链接：<span class="sample">github.com/owner/repo/releases/download/...</span></li>
+                        <li>Raw 和 Blob 文件：<span class="sample">github.com/owner/repo/raw/... 或 /blob/...</span></li>
+                        <li>Archive 链接：<span class="sample">github.com/owner/repo/archive/...</span></li>
+                        <li>Raw 文件：<span class="sample">raw.githubusercontent.com/owner/repo/...</span></li>
+                        <li>Gist 文件：<span class="sample">gist.github.com/owner/...</span></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="result hidden" id="result-container">
+                <h2>代理链接</h2>
+                <div class="result-box">
+                    <input type="text" id="proxy-result" readonly>
+                    <button id="copy-btn">复制</button>
+                    <button id="open-btn">访问</button>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>此服务基于 Cloudflare Workers 构建，不存储任何用户数据</p>
+            <p>本工具仅用于学习研究，请遵守相关法律法规</p>
+        </footer>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html> 
