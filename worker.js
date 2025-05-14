@@ -1,25 +1,14 @@
 'use strict'
 
 /**
- * static files (index.html, style.css, script.js, favicon.svg)
+ * static files (404.html, sw.js, conf.js)
  */
-// 移除对外部资源的依赖
-// const ASSET_URL = 'https://hunshcn.github.io/gh-proxy/'
+const ASSET_URL = 'https://ionrh.github.io/github-proxy/'
 // 前缀，如果自定义路由为example.com/gh/*，将PREFIX改为 '/gh/'，注意，少一个杠都会错！
 const PREFIX = '/'
 // 分支文件使用jsDelivr镜像的开关，0为关闭，默认关闭
 const Config = {
     jsdelivr: 0
-}
-
-// 静态资源映射
-const ASSET_MAP = {
-    '/': 'index.html',
-    '/index.html': 'index.html',
-    '/style.css': 'style.css',
-    '/script.js': 'script.js',
-    '/favicon.svg': 'favicon.svg',
-    '/favicon.ico': 'favicon.svg'
 }
 
 const whiteList = [] // 白名单，路径里面有包含字符的才会通过，e.g. ['/username/']
@@ -41,6 +30,7 @@ const exp3 = /^(?:https?:\/\/)?github\.com\/.+?\/.+?\/(?:info|git-).*$/i
 const exp4 = /^(?:https?:\/\/)?raw\.(?:githubusercontent|github)\.com\/.+?\/.+?\/.+?\/.+$/i
 const exp5 = /^(?:https?:\/\/)?gist\.(?:githubusercontent|github)\.com\/.+?\/.+?\/.+$/i
 const exp6 = /^(?:https?:\/\/)?github\.com\/.+?\/.+?\/tags.*$/i
+const exp7 = /^(?:https?:\/\/)?api\.github\.com\/.*$/i
 
 /**
  * @param {any} body
@@ -73,7 +63,7 @@ addEventListener('fetch', e => {
 
 
 function checkUrl(u) {
-    for (let i of [exp1, exp2, exp3, exp4, exp5, exp6]) {
+    for (let i of [exp1, exp2, exp3, exp4, exp5, exp6, exp7]) {
         if (u.search(i) === 0) {
             return true
         }
@@ -92,25 +82,9 @@ async function fetchHandler(e) {
     if (path) {
         return Response.redirect('https://' + urlObj.host + PREFIX + path, 301)
     }
-    
-    // 处理静态资源请求
-    const assetPath = urlObj.pathname
-    if (ASSET_MAP[assetPath]) {
-        // 这里应该返回对应的静态资源
-        // 在实际部署时，您需要提供这些静态资源的内容
-        return new Response(`请替换为实际的${ASSET_MAP[assetPath]}内容`, {
-            headers: {
-                'content-type': assetPath.endsWith('.css') ? 'text/css' : 
-                                assetPath.endsWith('.js') ? 'text/javascript' :
-                                assetPath.endsWith('.svg') ? 'image/svg+xml' :
-                                assetPath.endsWith('.ico') ? 'image/x-icon' : 'text/html'
-            }
-        })
-    }
-    
     // cfworker 会把路径中的 `//` 合并成 `/`
     path = urlObj.href.substr(urlObj.origin.length + PREFIX.length).replace(/^https?:\/+/, 'https://')
-    if (path.search(exp1) === 0 || path.search(exp5) === 0 || path.search(exp6) === 0 || path.search(exp3) === 0 || path.search(exp4) === 0) {
+    if (path.search(exp1) === 0 || path.search(exp5) === 0 || path.search(exp6) === 0 || path.search(exp3) === 0 || path.search(exp4) === 0 || path.search(exp7) === 0) {
         return httpHandler(req, path)
     } else if (path.search(exp2) === 0) {
         if (Config.jsdelivr) {
@@ -124,13 +98,7 @@ async function fetchHandler(e) {
         const newUrl = path.replace(/(?<=com\/.+?\/.+?)\/(.+?\/)/, '@$1').replace(/^(?:https?:\/\/)?raw\.(?:githubusercontent|github)\.com/, 'https://cdn.jsdelivr.net/gh')
         return Response.redirect(newUrl, 302)
     } else {
-        // 没有匹配到任何已知格式的路径，返回主页
-        // 在实际部署时，您需要提供index.html的内容
-        return new Response(`请替换为实际的index.html内容`, {
-            headers: {
-                'content-type': 'text/html'
-            }
-        })
+        return fetch(ASSET_URL + path)
     }
 }
 
@@ -162,7 +130,7 @@ function httpHandler(req, pathname) {
     if (!flag) {
         return new Response("blocked", {status: 403})
     }
-    if (urlStr.startsWith('github')) {
+    if (urlStr.startsWith('github') || urlStr.startsWith('api.github')) {
         urlStr = 'https://' + urlStr
     }
     const urlObj = newUrl(urlStr)
