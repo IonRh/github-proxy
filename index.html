@@ -5,10 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>资源加速器</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.6.0/fonts/remixicon.min.css">
 </head>
 <body>
+    <div class="bg-decoration">
+        <div class="bg-circle bg-circle-1"></div>
+        <div class="bg-circle bg-circle-2"></div>
+        <div class="bg-circle bg-circle-3"></div>
+    </div>
+
     <div class="container">
         <header>
+            <div class="logo">
+                <i class="ri-flashlight-fill"></i>
+            </div>
             <h1>资源加速器</h1>
             <p class="subtitle">轻松访问 JSDelivr、GitHub 和 Docker 资源，无需任何限制</p>
         </header>
@@ -16,62 +26,97 @@
         <main>
             <div class="input-section">
                 <div class="input-group">
-                    <input 
-                        type="text" 
-                        id="resource-url" 
-                        placeholder="请输入 JSDelivr、GitHub 或 Docker 链接"
-                        autocomplete="off"
-                    >
-                    <button id="proxy-btn" type="button">获取链接</button>
+                    <div class="input-wrapper">
+                        <i class="ri-link input-icon"></i>
+                        <input 
+                            type="text" 
+                            id="resource-url" 
+                            placeholder="请输入 JSDelivr、GitHub 或 Docker 链接"
+                            autocomplete="off"
+                        >
+                    </div>
+                    <button id="proxy-btn" type="button">
+                        <i class="ri-rocket-2-line"></i>
+                        <span>获取链接</span>
+                    </button>
                 </div>
                 <div class="status-message" id="status-message"></div>
             </div>
 
             <div class="supported-types">
-                <h3>支持的链接类型(可直接拼接URL)：</h3>
-                <div class="type-item">
-                    <span class="type-label">JSDelivr NPM 包:</span>
-                    <span class="type-example">cdn.jsdelivr.net/npm/package@version/file</span>
-                </div>
-                <div class="type-item">
-                    <span class="type-label">JSDelivr GitHub 文件:</span>
-                    <span class="type-example">cdn.jsdelivr.net/gh/user/repo@version/file</span>
-                </div>
-                <div class="type-item">
-                    <span class="type-label">JSDelivr WordPress 插件:</span>
-                    <span class="type-example">cdn.jsdelivr.net/wp/plugins/plugin-name/version/file</span>
-                </div>
-                <div class="type-item">
-                    <span class="type-label">JSDelivr 组合链接:</span>
-                    <span class="type-example">cdn.jsdelivr.net/combine/npm/package1,npm/package2</span>
-                </div>
-                <div class="type-item">
-                    <span class="type-label">GitHub Release/Archive:</span>
-                    <span class="type-example">github.com/user/repo/releases/download/v1.0.0/file</span>
-                </div>
-                <div class="type-item">
-                    <span class="type-label">GitHub Raw 文件:</span>
-                    <span class="type-example">raw.githubusercontent.com/user/repo/branch/file</span>
-                </div>
-                <div class="type-item">
-                    <span class="type-label">Docker 镜像:</span>
-                    <span class="type-example">registry-1.docker.io/library/image:tag</span>
+                <h3><i class="ri-information-line"></i> 支持的链接类型（可直接拼接 URL）</h3>
+                <div class="type-grid">
+                    <div class="type-card">
+                        <div class="type-card-header">
+                            <i class="ri-npmjs-fill" style="color: #CB3837;"></i>
+                            <span>JSDelivr NPM</span>
+                        </div>
+                        <code>cdn.jsdelivr.net/npm/package@version/file</code>
+                    </div>
+                    <div class="type-card">
+                        <div class="type-card-header">
+                            <i class="ri-github-fill" style="color: #333;"></i>
+                            <span>JSDelivr GitHub</span>
+                        </div>
+                        <code>cdn.jsdelivr.net/gh/user/repo@version/file</code>
+                    </div>
+                    <div class="type-card">
+                        <div class="type-card-header">
+                            <i class="ri-wordpress-fill" style="color: #21759B;"></i>
+                            <span>JSDelivr WordPress</span>
+                        </div>
+                        <code>cdn.jsdelivr.net/wp/plugins/plugin/ver/file</code>
+                    </div>
+                    <div class="type-card">
+                        <div class="type-card-header">
+                            <i class="ri-merge-cells-horizontal" style="color: #F7931E;"></i>
+                            <span>JSDelivr 组合</span>
+                        </div>
+                        <code>cdn.jsdelivr.net/combine/npm/pkg1,npm/pkg2</code>
+                    </div>
+                    <div class="type-card">
+                        <div class="type-card-header">
+                            <i class="ri-download-cloud-2-line" style="color: #0366d6;"></i>
+                            <span>GitHub Release</span>
+                        </div>
+                        <code>github.com/user/repo/releases/download/v1/file</code>
+                    </div>
+                    <div class="type-card">
+                        <div class="type-card-header">
+                            <i class="ri-file-code-line" style="color: #6f42c1;"></i>
+                            <span>GitHub Raw</span>
+                        </div>
+                        <code>raw.githubusercontent.com/user/repo/branch/file</code>
+                    </div>
+                    <div class="type-card">
+                        <div class="type-card-header">
+                            <i class="ri-ship-2-line" style="color: #2496ED;"></i>
+                            <span>Docker 镜像</span>
+                        </div>
+                        <code>registry-1.docker.io/library/image:tag</code>
+                    </div>
                 </div>
             </div>
 
             <div class="result hidden" id="result-container">
-                <h2>代理链接</h2>
+                <h2><i class="ri-check-double-line"></i> 代理链接</h2>
                 <div class="result-box">
                     <input type="text" id="proxy-result" readonly>
-                    <button id="copy-btn" type="button">复制</button>
-                    <button id="open-btn" type="button">访问</button>
+                    <button id="copy-btn" type="button">
+                        <i class="ri-file-copy-line"></i>
+                        <span>复制</span>
+                    </button>
+                    <button id="open-btn" type="button">
+                        <i class="ri-external-link-line"></i>
+                        <span>访问</span>
+                    </button>
                 </div>
             </div>
         </main>
 
         <footer>
-            <p>此服务基于 Cloudflare Workers 构建，不存储任何用户数据</p>
-            <p>本工具仅用于学习研究，请遵守相关法律法规</p>
+            <p><i class="ri-cloud-line"></i> 此服务基于 Cloudflare Workers 构建，不存储任何用户数据</p>
+            <p><i class="ri-shield-check-line"></i> 本工具仅用于学习研究，请遵守相关法律法规</p>
         </footer>
     </div>
     <script src="script.js"></script>
