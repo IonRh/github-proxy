@@ -2,7 +2,7 @@
 
 /**
  * 资源加速器 - Cloudflare Worker
- * 支持 GitHub、JSDelivr、Docker 资源代理
+ * 支持 GitHub、JSDelivr、Docker Registry 镜像代理
  */
 
 const ASSET_URL = 'https://ionrh.github.io/github-proxy/'
@@ -13,6 +13,10 @@ const Config = {
 }
 
 const whiteList = [] // 白名单，路径中包含指定字符才放行，e.g. ['/username/']
+
+// Docker Hub 配置
+const DOCKER_HUB = 'https://registry-1.docker.io'
+const DOCKER_AUTH = 'https://auth.docker.io'
 
 /** @type {ResponseInit} */
 const PREFLIGHT_INIT = {
@@ -43,12 +47,6 @@ const PATTERNS = {
     // Docker
     docker:     /^(?:https?:\/\/)?registry-1\.docker\.io\/.+$/i,
 }
-
-// 需要直接透传的模式（GitHub 相关）
-const PROXY_PATTERNS = [
-    PATTERNS.releases, PATTERNS.gitInfo, PATTERNS.raw,
-    PATTERNS.gist, PATTERNS.tags, PATTERNS.api,
-]
 
 // 所有已知模式（用于重定向 location 判断）
 const ALL_PATTERNS = Object.values(PATTERNS)
@@ -110,6 +108,16 @@ addEventListener('fetch', e => {
 async function fetchHandler(e) {
     const req = e.request
     const urlObj = new URL(req.url)
+    const pathname = urlObj.pathname
+
+    // ---- Docker Registry V2 镜像代理 ----
+    // 匹配 /v2/ 开头的路径，作为 Docker Registry Mirror
+    if (pathname === '/v2/' || pathname === '/v2') {
+        return dockerV2Handler(req, urlObj)
+    }
+    if (pathname.startsWith('/v2/')) {
+        return dockerV2ProxyHandler(req, urlObj)
+    }
 
     // ?q= 参数快捷跳转
     const qParam = urlObj.searchParams.get('q')
@@ -133,7 +141,7 @@ async function fetchHandler(e) {
         return httpHandler(req, ensureHttps(path))
     }
 
-    // Docker 代理
+    // Docker 代理（直接拼接 URL 方式）
     if (type === 'docker') {
         return httpHandler(req, ensureHttps(path))
     }
@@ -153,6 +161,144 @@ async function fetchHandler(e) {
     // 其余 GitHub 模式直接代理
     return httpHandler(req, ensureHttps(path))
 }
+
+// ===============================================
+// Docker Registry V2 镜像代理
+// ===============================================
+
+/**
+ * 处理 /v2/ 根路径 - Docker 版本检查
+ * Docker daemon 首先请求 /v2/ 来确认 registry 是否支持 V2 API
+ */
+async function dockerV2Handler(req, urlObj) {
+    const headers = new Headers({
+        'content-type': 'application/json',
+        'access-control-allow-origin': '*',
+        'access-control-allow-headers': '*',
+        'access-control-allow-methods': 'GET, HEAD, OPTIONS',
+    })
+
+    if (req.method === 'OPTIONS') {
+        return new Response(null, { status: 204, headers })
+    }
+
+    // 向 Docker Hub 发送 /v2/ 检查请求
+    const resp = await fetch(DOCKER_HUB + '/v2/', {
+        method: 'GET',
+        redirect: 'follow',
+    })
+
+    if (resp.status === 401) {
+        // Docker Hub 返回 401，需要改写 Www-Authenticate 头
+        // 将 auth.docker.io 的认证地址替换为我们的代理地址
+        const wwwAuth = resp.headers.get('www-authenticate') || ''
+        const newAuth = rewriteDockerAuth(wwwAuth, urlObj)
+        headers.set('www-authenticate', newAuth)
+        return new Response(resp.body, { status: 401, headers })
+    }
+
+    return new Response(resp.body, { status: resp.status, headers })
+}
+
+/**
+ * 处理 /v2/* 的具体请求
+ * 包括：manifests、blobs、tags/list 等
+ */
+async function dockerV2ProxyHandler(req, urlObj) {
+    const pathname = urlObj.pathname
+
+    // 处理 token 请求：/v2/auth/token?...
+    // Docker daemon 会根据改写后的 Www-Authenticate 来请求 token
+    if (pathname.startsWith('/v2/auth/')) {
+        return dockerAuthProxy(req, urlObj)
+    }
+
+    // 代理到 Docker Hub
+    const targetUrl = DOCKER_HUB + pathname + urlObj.search
+
+    const headers = new Headers(req.headers)
+    headers.delete('host')
+
+    const resp = await fetch(targetUrl, {
+        method: req.method,
+        headers,
+        redirect: 'follow',
+        body: req.body,
+    })
+
+    const respHeaders = new Headers(resp.headers)
+    respHeaders.set('access-control-allow-origin', '*')
+    respHeaders.set('access-control-expose-headers', '*')
+
+    // 如果返回 401，改写认证地址
+    if (resp.status === 401) {
+        const wwwAuth = respHeaders.get('www-authenticate') || ''
+        respHeaders.set('www-authenticate', rewriteDockerAuth(wwwAuth, urlObj))
+    }
+
+    // 改写 blob 重定向的 Location（Docker Hub blob 经常 302 到 CDN）
+    if (resp.status === 301 || resp.status === 302 || resp.status === 307) {
+        const location = respHeaders.get('location')
+        if (location) {
+            // blob 重定向直接跟随，不需要代理
+            return fetch(location, {
+                method: req.method,
+                headers: { 'accept': req.headers.get('accept') || '*/*' },
+                redirect: 'follow',
+            })
+        }
+    }
+
+    return new Response(resp.body, {
+        status: resp.status,
+        headers: respHeaders,
+    })
+}
+
+/**
+ * 代理 Docker 认证请求
+ * Docker daemon 需要先获取 token 才能拉取镜像
+ */
+async function dockerAuthProxy(req, urlObj) {
+    // 将 /v2/auth/token?... 转换为 auth.docker.io/token?...
+    const search = urlObj.search
+    const targetUrl = DOCKER_AUTH + '/token' + search
+
+    const resp = await fetch(targetUrl, {
+        method: req.method,
+        headers: {
+            'accept': 'application/json',
+        },
+        redirect: 'follow',
+    })
+
+    const headers = new Headers(resp.headers)
+    headers.set('access-control-allow-origin', '*')
+    headers.set('access-control-expose-headers', '*')
+
+    return new Response(resp.body, {
+        status: resp.status,
+        headers,
+    })
+}
+
+/**
+ * 改写 Docker Www-Authenticate 头
+ * 将 realm="https://auth.docker.io/token" 替换为我们的代理地址
+ */
+function rewriteDockerAuth(wwwAuth, urlObj) {
+    // 原始: Bearer realm="https://auth.docker.io/token",service="registry.docker.io"
+    // 目标: Bearer realm="https://your-worker.com/v2/auth/token",service="registry.docker.io"
+    const proxyOrigin = urlObj.origin
+    return wwwAuth.replace(
+        /https?:\/\/auth\.docker\.io\/token/gi,
+        proxyOrigin + '/v2/auth/token'
+    )
+}
+
+// ===============================================
+// 通用 HTTP 代理
+// ===============================================
 
 /**
  * HTTP 请求处理（白名单校验 + 代理）
@@ -174,7 +320,6 @@ function httpHandler(req, pathname) {
     }
 
     const reqHdrNew = new Headers(req.headers)
-    // 移除可能导致问题的请求头
     reqHdrNew.delete('host')
 
     const urlObj = newUrl(pathname)

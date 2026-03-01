@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>资源加速器</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/svg+xml" href="images/favicon.svg">
+    <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.6.0/fonts/remixicon.min.css">
 </head>
 <body>
@@ -31,7 +32,7 @@
                         <input 
                             type="text" 
                             id="resource-url" 
-                            placeholder="请输入 JSDelivr、GitHub 或 Docker 链接"
+                            placeholder="输入链接或 Docker 镜像名，如 nginx:latest"
                             autocomplete="off"
                         >
                     </div>
@@ -95,6 +96,13 @@
                         </div>
                         <code>registry-1.docker.io/library/image:tag</code>
                     </div>
+                    <div class="type-card type-card-highlight">
+                        <div class="type-card-header">
+                            <i class="ri-ship-2-line" style="color: #2496ED;"></i>
+                            <span>Docker 镜像名</span>
+                        </div>
+                        <code>nginx:latest、ubuntu:22.04、user/repo:tag</code>
+                    </div>
                 </div>
             </div>
 
@@ -112,6 +120,102 @@
                     </button>
                 </div>
             </div>
+
+            <div class="result docker-result hidden" id="docker-result-container">
+                <h2><i class="ri-ship-2-line"></i> Docker 镜像拉取</h2>
+                <p class="docker-result-note">
+                    <i class="ri-information-line"></i>
+                    Docker 镜像由多层组成，无法通过浏览器下载，请使用以下命令拉取：
+                </p>
+                <div class="docker-cmd-section">
+                    <h4>方式一：配置镜像源后直接拉取（推荐）</h4>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>bash</span>
+                            <button class="code-copy-btn" data-target="docker-cmd-mirror" type="button">
+                                <i class="ri-file-copy-line"></i>
+                            </button>
+                        </div>
+                        <pre id="docker-cmd-mirror"></pre>
+                    </div>
+                    <p class="step-hint">需先按下方教程配置 <code>registry-mirrors</code></p>
+                </div>
+                <div class="docker-cmd-section">
+                    <h4>方式二：指定代理域名拉取（无需配置）</h4>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>bash</span>
+                            <button class="code-copy-btn" data-target="docker-cmd-proxy" type="button">
+                                <i class="ri-file-copy-line"></i>
+                            </button>
+                        </div>
+                        <pre id="docker-cmd-proxy"></pre>
+                    </div>
+                    <p class="step-hint">拉取后可用 <code id="docker-retag-hint"></code> 重新打标签</p>
+                </div>
+            </div>
+
+            <div class="docker-guide">
+                <h3><i class="ri-ship-2-line"></i> Docker 镜像加速配置</h3>
+                <p class="guide-desc">将本站域名配置为 Docker 镜像源，直接加速 <code>docker pull</code></p>
+                
+                <div class="guide-steps">
+                    <div class="guide-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>编辑 Docker 配置文件</h4>
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span>bash</span>
+                                    <button class="code-copy-btn" data-target="code-1" type="button">
+                                        <i class="ri-file-copy-line"></i>
+                                    </button>
+                                </div>
+                                <pre id="code-1">sudo mkdir -p /etc/docker
+sudo tee /etc/docker/daemon.json &lt;&lt;EOF
+{
+  "registry-mirrors": ["https://你的域名"]
+}
+EOF</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="guide-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>重启 Docker 服务</h4>
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span>bash</span>
+                                    <button class="code-copy-btn" data-target="code-2" type="button">
+                                        <i class="ri-file-copy-line"></i>
+                                    </button>
+                                </div>
+                                <pre id="code-2">sudo systemctl daemon-reload
+sudo systemctl restart docker</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="guide-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>验证是否生效</h4>
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span>bash</span>
+                                    <button class="code-copy-btn" data-target="code-3" type="button">
+                                        <i class="ri-file-copy-line"></i>
+                                    </button>
+                                </div>
+                                <pre id="code-3">docker info | grep -A 5 "Registry Mirrors"</pre>
+                            </div>
+                            <p class="step-hint">如果输出中包含你的域名，说明配置成功。之后使用 <code>docker pull nginx</code> 即可自动走镜像加速。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
 
         <footer>
@@ -119,6 +223,6 @@
             <p><i class="ri-shield-check-line"></i> 本工具仅用于学习研究，请遵守相关法律法规</p>
         </footer>
     </div>
-    <script src="script.js"></script>
+    <script src="js/script.js"></script>
 </body>
 </html>

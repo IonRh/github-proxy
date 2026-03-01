@@ -24,6 +24,11 @@ body {
   min-height: 100vh;
   color: var(--text);
   background: var(--bg);
+  background-image: url('../images/bj.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  background-attachment: fixed;
   overflow-x: hidden;
   position: relative;
 }
